@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom';
-import { Box, Flex, Spacer, Grid } from '@aircall/tractor';
+import { Box, Flex, Spacer, Grid, Button } from '@aircall/tractor';
 import logo from '../../logo.png';
 
 export const ProtectedLayout = () => {
@@ -11,7 +11,7 @@ export const ProtectedLayout = () => {
         </Link>
         <Spacer space="m" alignItems="center">
           <span>{`Welcome {username}!`}</span>
-          <Link to="/login">logout</Link>
+          <Button size="regular">Logout</Button>
         </Spacer>
       </Flex>
       <Grid w="500px" mx="auto" rowGap={2}>

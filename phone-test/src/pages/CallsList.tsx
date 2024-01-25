@@ -21,8 +21,6 @@ export const CallsListPage = () => {
   const typeFiltersArray = search.get('type')?.split(',') || [];
   const isListFiltered = !!directionFilter || !!typeFiltersArray.length;
 
-  console.log(isListFiltered);
-
   const { loading, error, data } = useQuery(PAGINATED_CALLS, {
     variables: {
       offset: 0,

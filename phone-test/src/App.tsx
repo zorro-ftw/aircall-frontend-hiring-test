@@ -9,32 +9,12 @@ import { ProtectedLayout } from './components/routing/ProtectedLayout';
 import { darkTheme } from './style/theme/darkTheme';
 import { RouterProvider } from 'react-router-dom';
 import { GlobalAppStyle } from './style/global';
-import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink } from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
+import { ApolloProvider } from '@apollo/client';
 import { AuthProvider } from './hooks/useAuth';
-
-const httpLink = createHttpLink({
-  uri: 'https://frontend-test-api.aircall.dev/graphql'
-});
-
-const authLink = setContext((_, { headers }) => {
-  // get the authentication token from local storage if it exists
-  const accessToken = localStorage.getItem('access_token');
-  const parsedToken = accessToken ? JSON.parse(accessToken) : undefined;
-
-  // return the headers to the context so httpLink can read them
-  return {
-    headers: {
-      ...headers,
-      authorization: accessToken ? `Bearer ${parsedToken}` : ''
-    }
-  };
-});
-
-const client = new ApolloClient({
-  link: authLink.concat(httpLink),
-  cache: new InMemoryCache()
-});
+import { client } from './gql/client/client';
+import { REFRESH_ACCESS_TOKEN } from './gql/mutations/refreshAccessToken';
+import { useMutation } from '@apollo/client';
+import { onError } from '@apollo/client/link/error';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -49,6 +29,30 @@ export const router = createBrowserRouter(
 );
 
 function App() {
+  const [refreshMutation] = useMutation(REFRESH_ACCESS_TOKEN, {
+    onCompleted: data => {
+      const newAccessToken = data?.refreshTokenV2?.access_token;
+      if (newAccessToken) {
+        // Store the new access token in local storage
+        localStorage.setItem('access_token', JSON.stringify(newAccessToken));
+      }
+    }
+  });
+
+  // Handle 401 situation
+  const errorLink = onError(({ graphQLErrors }) => {
+    if (!graphQLErrors?.length) return;
+    const { response } = graphQLErrors[0].extensions.exception as any;
+    console.log(graphQLErrors);
+
+    if (response.statusCode === 401) {
+      localStorage.removeItem('access_token');
+      refreshMutation();
+    }
+  });
+
+  client.setLink(errorLink);
+
   return (
     <Tractor injectStyle theme={darkTheme}>
       <ApolloProvider client={client}>

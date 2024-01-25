@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { LOGIN } from '../gql/mutations';
 import { useLocalStorage } from './useLocalStorage';
@@ -20,11 +20,16 @@ export interface LoginCredentials {
 
 export const AuthProvider = () => {
   const [user, setUser] = useState();
-  const [status, setStatus] = useState('loading');
+  const [isAuthenticated, setAuthenticated] = useState(false);
   const [accessToken, setAccessToken] = useLocalStorage('access_token', undefined);
   const [refreshToken, setRefreshToken] = useLocalStorage('refresh_token', undefined);
   const [loginMutation] = useMutation(LOGIN);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const localAccessToken = localStorage.getItem('access_token');
+    setAuthenticated(!!localAccessToken);
+  }, []);
 
   // call this function when you want to authenticate the user
   const login = ({ username, password }: LoginCredentials) => {
@@ -35,6 +40,7 @@ export const AuthProvider = () => {
         setAccessToken(access_token);
         setRefreshToken(refresh_token);
         setUser(user);
+        setAuthenticated(true);
         console.log('redirect to calls');
         navigate('/calls');
       }
